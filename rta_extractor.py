@@ -2,7 +2,8 @@ import time
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-
+from selenium.webdriver.support.wait import WebDriverWait
+from RecaptchaSolver import RecaptchaSolver as RecaptchaSolverV2
 
 class RtaExtractor:
     def __init__(self, username, password, nol_id):
@@ -11,13 +12,17 @@ class RtaExtractor:
         self.RTA_NOL_CARD = nol_id
         self.LOGIN_URL = "https://www.rta.ae/wps/myportal/rta/ae/home/dashboard?lang=en"
         self.TRANSACTIONS_URL = "https://www.rta.ae/wps/portal/rta/ae/public-transport/nol/view-history?lang=en"
-        self.driver = webdriver.Chrome()
+        options = webdriver.ChromeOptions()
+        options.add_argument("--incognito")
+        options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
+
+        self.driver = webdriver.Chrome(options=options)
         self.driver.implicitly_wait(60)
         self.ENTER_TAG_NUMBER_CSS = "#nolRefundFrm > div > div > div.swiper-wrapper > div.swiper-slide.swiper-slide-next.rtaOffice.loggedinTabs > label"
         self.TRAVEL_HISTORY_CSS = (
             "#smartStep_2 > div.smart-step__content > div > div > div:nth-child(5)"
         )
-
+        self.form_btn = "button.btn"
     def login(self):
         self.driver.get(self.LOGIN_URL)
         username_box = self.driver.find_element(by=By.NAME, value="username")
@@ -29,18 +34,35 @@ class RtaExtractor:
         password_box.send_keys(self.RTA_PASSWORD)
         login_btn.click()
 
-    def fill_form(self):
-        self.driver.get(self.TRANSACTIONS_URL)
-        time.sleep(5)
-        self.driver.find_element(by=By.CSS_SELECTOR, value=self.ENTER_TAG_NUMBER_CSS).click()
-        self.driver.find_element(by=By.NAME, value="tagId").send_keys(self.RTA_NOL_CARD)
-
+    def fill_form(self, retries = 5):
+        try:
+            self.driver.get(self.TRANSACTIONS_URL)
+            time.sleep(0.74)
+            type = self.driver.find_element(by=By.CSS_SELECTOR, value=self.ENTER_TAG_NUMBER_CSS)
+            self.wait_for_it(type)
+            type.click()
+            self.driver.find_element(by=By.NAME, value="tagId").send_keys(self.RTA_NOL_CARD)
+            print("Solving")
+            self.recaptcha_solver_user()
+            print("Solved")
+            btn = self.driver.find_element(by=By.CSS_SELECTOR, value="button.btn")
+            print("Found BTN")
+            btn.click()
+            print("Clicked BTN")
+        except Exception as e:
+            if retries > 0:
+                print(f"fill_form Error: {e}. Retrying...")
+                
+                self.fill_form(retries - 1)
+            else:
+                raise e
 
 
     def get_travels(self):
         travel_history = self.driver.find_element(
             by=By.CSS_SELECTOR, value=self.TRAVEL_HISTORY_CSS
         )
+        self.wait_for_it(travel_history)
         travel_history.get_attribute("innerHTML")
         travel_history_table = travel_history.find_element(
             by=By.CLASS_NAME, value="ss-table__tbody"
@@ -94,3 +116,17 @@ class RtaExtractor:
             "station": station,
             "amount": amount,
         }
+    
+    def recaptcha_solver_user(self):
+        input("Solve the recaptcha and press enter")
+
+    def recaptcha_solver2(self):
+        recaptchaSolver = RecaptchaSolverV2(self.driver)
+        recaptchaSolver.solveCaptcha()
+        
+    
+            
+    def wait_for_it(self, element, timeout=20):
+        return WebDriverWait(self.driver, timeout).until(
+            lambda d : element.is_displayed()
+        )

@@ -4,9 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-selenium = "*"
+selenium = ">= 4.25.0"
 python-dotenv = "*"
 pandas = "*"
+drissionpage = "*"
+pydub = "*"
+speechrecognition = "*"
+aiohttp = "*"
 
 [dev-packages]
 ipykernel = "*"

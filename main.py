@@ -17,9 +17,6 @@ rta_extractor.login()
 # Step 2
 rta_extractor.fill_form()
 
-# Wait for the user to finish
-input("Mark the captcha and fill it's challange, press next and let me know...")
-
 # Step 3
 travels = rta_extractor.get_travels()
 
