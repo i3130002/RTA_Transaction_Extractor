@@ -44,6 +44,7 @@ class RtaExtractor:
             self.driver.find_element(by=By.NAME, value="tagId").send_keys(self.RTA_NOL_CARD)
             print("Solving")
             self.recaptcha_solver_user()
+            # self.recaptcha_solver2()
             print("Solved")
             btn = self.driver.find_element(by=By.CSS_SELECTOR, value="button.btn")
             print("Found BTN")
